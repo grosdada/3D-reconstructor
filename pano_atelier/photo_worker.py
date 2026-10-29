@@ -23,7 +23,8 @@ def moge(image_path, output, fov):
     global MODEL
     if MODEL is None: MODEL = MoGeModel.from_pretrained('Ruicheng/moge-2-vitb-normal').to(device).eval()
     tensor = torch.tensor(array/255, dtype=torch.float32, device=device).permute(2, 0, 1)
-    with torch.inference_mode(): result = MODEL.infer(tensor, fov_x=fov if fov > 0 else None, resolution_level=7)
+    # Half precision only on GPU: CPU convolutions do not support float16.
+    with torch.inference_mode(): result = MODEL.infer(tensor, fov_x=fov if fov > 0 else None, resolution_level=7, use_fp16=device == 'cuda')
     depth = result['depth'].cpu().numpy().astype(np.float32)
     valid = result['mask'].cpu().numpy()
     depth[~valid] = 0

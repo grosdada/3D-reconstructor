@@ -307,6 +307,9 @@ def analyse(depth,fov,valid=None,elements=(),width=192,seed=7,max_planes=10,edge
         n=p['normal']
         if n[2]>.95 and p['k']<height-.3 and (floor is None or p['k']<floor['k']): floor=p
         elif n[2]<-.95 and -p['k']>height+.3 and (ceiling is None or -p['k']>-ceiling['k']): ceiling=p
+    if floor is not None and abs(floor['k'])>1e-6:  # world origin on the floor, whichever plane gave gravity
+        shift=float(floor['k']); Pw[:,2]-=shift; cam=cam-(0,0,shift); height-=shift
+        for p in planes: p['k']-=shift*float(p['normal'][2])
     room_h=(-ceiling['k']-floor['k']) if floor and ceiling else 2.5
     for p in planes:
         n=p['normal']; pts=Pw[p['mask']]; zspan=np.percentile(pts[:,2],98)-np.percentile(pts[:,2],2)
