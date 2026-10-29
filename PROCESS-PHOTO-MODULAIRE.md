@@ -76,3 +76,27 @@ La première intégration montrait des grilles et lignes dupliquées : GPT dépl
 Pour suivre les modules sans artefacts sur les chanfreins : stocker position et normale de référence APRÈS les modificateurs, avec matrices d'objet figées. Un petit Geometry Nodes par objet ne modifie pas la géométrie. Les entrées personnalisées d'un NodesModifier par id-properties ont échoué dans Blender 5.2 ; les constantes sont donc inscrites dans une copie du groupe de coordonnées. Vérifier explicitement translations ET rotations de modules, ainsi que les voisins.
 
 Une trajectoire d'inspection est enregistrée sur `CAM_TRAJET_INSPECTION` (frames 1–241). `render_albedo_checks.py` rend vues avant/arrière/raccord, déplacement de 40 cm, relighting réel, panorama et masque de couverture/recouvrement. Ce premier cycle protège les défauts et conserve la V2 dans les zones cachées ; il ne prouve pas la perfection de tous les raccords. Les petites réparations sous masque peuvent ensuite viser les zones résiduelles sans refaire l'ensemble.
+
+## Pipeline automatique photo → scène, 0.7.0 — 29 octobre 2026
+
+Demande : une interface simple (une ou plusieurs photos, un gros bouton Générer) qui mêle camera mapping et vraie modélisation pour reproduire une photo, en sept phases, avec une note /20 servant d’objectif d’amélioration. Code : `pano_atelier/photo_*.py`, interface `photo_workflow.py`, ligne de commande `photo_to_scene.py`.
+
+Ordre retenu et raisons :
+
+1. **Camera mapping brut** : profondeur sur la caméra de la photo. Il fixe la spatialité et sert d’étalon (« projection brute » notée elle aussi). Il n’est jamais livré comme résultat : sa collection est masquée après la phase 2.
+2. **Modélisation** : la profondeur est relue comme une pièce. Gravité depuis le sol ou le plafond, lacet Manhattan, plans RANSAC redressés à moins de 8° des axes, murs prolongés jusqu’au sol, au plafond et aux angles voisins (le mur caché derrière un meuble existe). Les pixels plus profonds que le mur dans son rectangle deviennent des ouvertures construites explicitement (cellules de dalle, jambages et linteaux, sans booléen), avec cadre et vitrage séparé. Le reste devient des objets fermés : relief lissé le long des rayons (la silhouette reste exacte depuis la photo), côtés le long du contour, dos poussé selon les rayons sans traverser les murs, base ramenée au sol si l’écart est inférieur à 25 cm. Le lointain et le ciel vont sur une carte de fond.
+3. **Texturing** : délumination de la photo par segments (le flou d’éclairage ne traverse pas les bords d’objets) ou, en mode API, guidée par l’albédo renvoyé dont seules les basses fréquences sont conservées (aucun contour dédoublé si le générateur décale un motif). Atlas UV par module. Les caméras de texturing sont choisies par gain de couverture pondéré par la qualité (incidence, distance, fondu de cadre, visibilité BVH). Chaque vue générée ne remplace que son masque ; le remplissage local se fait objet par objet (rendu d’identifiants). Les masques de raccord sont écrits par module et par vue.
+4. **Matériaux** : familles physiques, rugosité d’après les reflets de la photo. Albédo uniquement en Base Color.
+5. **Procédural** : détail métrique en coordonnées objet, activé selon le rapport entre la taille du texel et l’empreinte du pixel (distance × angle pixel de la caméra).
+6. **Lumière** : un rendu par lumière candidate, puis intensités et teintes résolues par NNLS face à la photo. Les sources d’appoint sont invisibles à la caméra, aux reflets et à la transmission : sinon leur disque apparaît dans le vitrage (constaté sur la fixture). L’exposition résiduelle est appliquée aux lumières, pas au post-traitement, pour que la plaque photo du fond reste intacte.
+7. **Note et amélioration** : sous-notes structure, couleur, contours, détail et lumière. Chaque itération corrige l’albédo des surfaces vues par la photo (rapport de luminance restreint aux surfaces modélisées, teinte amortie) et réajuste le look ; elle est annulée si la note baisse.
+
+Erreurs rencontrées et décisions :
+
+- Une régression pixel à pixel pour l’étalonnage écrase le contraste (régression vers la moyenne) : rendu délavé. Remplacée par une matrice de gains bornée ajustée sur des images floutées, puis une correspondance d’histogramme.
+- Des courbes par canal créent des anneaux colorés sur les dégradés ; une courbe unique sur la luminance sans pente bornée crée des lignes de niveau. Retenu : courbe de luminance appliquée en rapport, pente limitée entre 0,6 et 1,8.
+- Le nœud Render Layers d’un compositeur créé par script pointe sur la scène de contexte : il faut fixer `rl.scene`. Les rendus internes désactivent le compositeur.
+- Un driver vers `scene.camera.data.angle` n’est pas résolu par le depsgraph : il faut cibler directement la donnée caméra.
+- Une seconde génération dans la même session renomme les objets (`.001`) : tout est indexé par le nom réel de l’objet.
+
+Résultat mesuré sur la pièce analytique 640 × 480 (`photo_fixtures.py`, mode local, Standard, 4 cœurs CPU) : 18,3/20 en environ 3 minutes, contre 18,0 pour la projection brute. La scène reste cohérente hors axe ; le flanc de l’objet, inventé par le remplissage local, reste la zone la plus faible. Aucune photo réelle n’a encore été évaluée, et le chemin API n’est validé qu’avec un serveur simulé.

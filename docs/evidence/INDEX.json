@@ -47,5 +47,12 @@
     "source_sha256": "8305105ac63ade0ad30b1b0a71633f2f656e9d7f096ed90756be46b2f554ff42",
     "status": "archived evidence; not re-rendered for publication",
     "path_redaction": true
+  },
+  {
+    "file": "photo-pipeline.json",
+    "source": "photo_to_scene.py run on photo_fixtures (manifest.json, score.json)",
+    "source_sha256": "cec21339fa2781c19a7842be8ed7d0711f13a19fcc1d5b907d00ee29fbd4de80",
+    "status": "generated for 0.7.0; reproducible with the command inside",
+    "path_redaction": true
   }
 ]

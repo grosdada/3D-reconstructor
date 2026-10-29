@@ -35,3 +35,7 @@ Pour une réparation générative, lier chaque image à sa caméra, son masque, 
 Lire [references/cockpit-case.md](references/cockpit-case.md) pour le cas cockpit déjà construit, ses fichiers reproductibles, les défauts observés et les contrôles. Les valeurs de caméra et les dimensions de ce cas ne sont pas des valeurs par défaut pour d'autres photos.
 
 Lire aussi [references/multi-scene-lessons.md](references/multi-scene-lessons.md) pour les retours tour, sas, ville et station-service : procédural, projections rapprochées, optimisation, végétation, brouillard et intérieur. Le dossier de transmission général est [docs/TRANSMISSION-CLAUDE.html](../../docs/TRANSMISSION-CLAUDE.html).
+
+## Pipeline automatique 0.7.0
+
+Le panneau « Photo → Scène 3D » enchaîne camera mapping, modélisation par plans et volumes, texturing multivues, matériaux, procédural, lumière ajustée et note /20. Utiliser son résultat comme base éditable, puis appliquer ce skill pour les corrections supervisées. Détails et limites mesurées : README et dernière section de `PROCESS-PHOTO-MODULAIRE.md`.

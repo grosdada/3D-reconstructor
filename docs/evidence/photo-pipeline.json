@@ -1,0 +1,123 @@
+{
+  "date": "2026-10-29",
+  "blender": "5.2.1 LTS (module bpy, Linux, CPU 4 cœurs)",
+  "code_version": "0.7.0",
+  "fixture": "photo_fixtures.render(640, 480, noise=.008, textured=True) — pièce analytique, profondeur exacte fournie",
+  "command": "photo_to_scene.py -- salle.png --depth salle-depth.npy --fov 70 --quality STANDARD (mode LOCAL)",
+  "phases": {
+    "camera": {
+      "state": "done",
+      "seconds": 2.1,
+      "note": "profondeur : fichier, champ 70.0°"
+    },
+    "model": {
+      "state": "done",
+      "seconds": 1.92,
+      "note": "3 murs, 1 ouvertures, 1 objets"
+    },
+    "texture": {
+      "state": "done",
+      "seconds": 28.54,
+      "note": "3 vues (1 photo), 7 atlas"
+    },
+    "material": {
+      "state": "done",
+      "seconds": 1.32,
+      "note": "brick, concrete, paint, plaster, tile"
+    },
+    "procedural": {
+      "state": "done",
+      "seconds": 0.03,
+      "note": "7 matières émulées"
+    },
+    "light": {
+      "state": "done",
+      "seconds": 77.03,
+      "note": "2 lumières, brume β=0.000, glow 0.00"
+    },
+    "score": {
+      "state": "done",
+      "seconds": 58.13,
+      "note": "18.2 / 20"
+    }
+  },
+  "score": {
+    "total": 18.25,
+    "subscores": {
+      "structure": 0.9571,
+      "colour": 0.7951,
+      "edges": 0.9229,
+      "detail": 0.9458,
+      "light": 0.9769
+    },
+    "camera_mapping_reference": 17.96,
+    "history": [
+      {
+        "iteration": 0,
+        "total": 15.43
+      },
+      {
+        "iteration": 1,
+        "total": 17.57
+      },
+      {
+        "iteration": 2,
+        "total": 18.25
+      }
+    ],
+    "mean_delta_e": 2.75
+  },
+  "planner": {
+    "candidates": 100,
+    "selected": 2,
+    "coverage": 0.11578097830805528,
+    "gains": [
+      0.08072721007315536,
+      0.02168678904328702,
+      0.013366979191612904
+    ],
+    "photos_coverage": 0.08072720816223876
+  },
+  "lights": {
+    "kept": [
+      {
+        "light": "Fenêtre · Vitrage 01-01",
+        "share": 0.161
+      },
+      {
+        "light": "Remplissage caméra",
+        "share": 0.317
+      }
+    ],
+    "world_share": 0.521,
+    "residual": 0.4981
+  },
+  "tests": {
+    "photo_pure": {
+      "run": 17,
+      "failures": 0
+    },
+    "photo_blender": {
+      "run": 7,
+      "failures": 0
+    },
+    "photo_worker_opencv": {
+      "run": 1,
+      "failures": 0
+    },
+    "core": {
+      "run": 17,
+      "failures": 0
+    },
+    "modular": {
+      "run": 5,
+      "failures": 0
+    }
+  },
+  "network": "serveur HTTP local simulé uniquement ; aucun appel API payant",
+  "limits": [
+    "Fixture analytique, pas une photo réelle : la note sur photos réelles reste à mesurer.",
+    "Profondeur exacte fournie : MoGe non exécuté dans cet environnement (pas de GPU / torch).",
+    "Le flanc des objets non vu par la photo vient du remplissage local ; le mode API n’a été vérifié qu’en contrat."
+  ]
+}

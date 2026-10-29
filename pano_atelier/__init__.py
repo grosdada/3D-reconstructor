@@ -1,5 +1,5 @@
-bl_info = {'name':'Pano Atelier','author':'Pano Atelier','version':(0,6,1),'blender':(4,2,0),
-    'location':'Vue 3D > barre latérale > Pano Atelier','description':'Décors depuis images, inspection et raccords masqués','category':'3D View'}
+bl_info = {'name':'Pano Atelier','author':'Pano Atelier','version':(0,7,0),'blender':(4,2,0),
+    'location':'Vue 3D > barre latérale > Pano Atelier','description':'Photo → scène 3D éditable, décors depuis images, inspection et raccords masqués','category':'3D View'}
 
 import json
 import math
@@ -10,7 +10,7 @@ from concurrent.futures import Future
 import bpy
 from bpy.props import StringProperty, FloatProperty, IntProperty, BoolProperty, EnumProperty, PointerProperty
 from mathutils import Vector, Euler
-from . import core, engine, pipeline, providers, structural, camera_navigation, modular_workflow, city_workflow, gas_workflow
+from . import core, engine, pipeline, providers, structural, camera_navigation, modular_workflow, city_workflow, gas_workflow, photo_workflow
 
 RUNNING=False
 
@@ -455,6 +455,7 @@ CLASSES=(PA_Settings,PA_Preferences,PA_Key,PA_ClearKey,PA_Demo,PA_Build,PA_Run,P
 
 
 def register():
+    photo_workflow.register()  # first: the photo → scene panel opens the sidebar tab
     for cls in CLASSES: bpy.utils.register_class(cls)
     bpy.types.Scene.pa_settings=PointerProperty(type=PA_Settings)
     camera_navigation.register()
@@ -464,7 +465,7 @@ def register():
 
 
 def unregister():
-    if RUNNING: raise RuntimeError('Arrêter le traitement avant de désactiver Pano Atelier.')
+    if RUNNING or photo_workflow.RUNNING: raise RuntimeError('Arrêter le traitement avant de désactiver Pano Atelier.')
     gas_workflow.unregister()
     city_workflow.unregister()
     modular_workflow.unregister()
@@ -472,3 +473,4 @@ def unregister():
     providers._KEYS.clear()
     del bpy.types.Scene.pa_settings
     for cls in reversed(CLASSES): bpy.utils.unregister_class(cls)
+    photo_workflow.unregister()

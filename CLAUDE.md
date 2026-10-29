@@ -1,8 +1,8 @@
-# Transmission pour revue — Pano Atelier 0.6.1
+# Transmission pour revue — Pano Atelier 0.7.0
 
 Lire en premier `docs/TRANSMISSION-CLAUDE.html` : document autonome en français, illustré, contenant l'état, l'architecture, les essais, les erreurs, les limites, Trompe et les priorités de revue.
 
-Puis lire `skills/blender-photo-modular/SKILL.md`, ses références et `PROCESS-PHOTO-MODULAIRE.md`. Le manifeste d'extension et `bl_info` indiquent 0.6.1. Le README historique et `ETAT-DU-PROTOTYPE.md` racontent les premières itérations, pas l'état courant.
+Puis lire `skills/blender-photo-modular/SKILL.md`, ses références et `PROCESS-PHOTO-MODULAIRE.md`. Le manifeste d'extension et `bl_info` indiquent 0.7.0. Le pipeline photo → scène (panneau « Photo → Scène 3D ») est décrit dans le README et à la fin de `PROCESS-PHOTO-MODULAIRE.md`. Le README historique et `ETAT-DU-PROTOTYPE.md` racontent les premières itérations, pas l'état courant.
 
 ## Invariants
 
@@ -12,11 +12,12 @@ Puis lire `skills/blender-photo-modular/SKILL.md`, ses références et `PROCESS-
 - Procédural pour grain, roughness, patine générale ; projection pour détails spécifiques. Faible bump et échelle métrique.
 - Préserver les versions validées. Les tests ne doivent jamais enregistrer leurs overrides dans les scènes de production.
 - Aucune clé, donnée privée, bibliothèque commerciale ou modélisation dans Git. Les images de ce dossier sont uniquement des aperçus de rendus.
-- Ne pas annoncer une reconstruction automatique universelle : les scènes actuelles sont des recettes supervisées.
+- Ne pas annoncer une reconstruction automatique universelle : les scènes actuelles sont des recettes supervisées. Le pipeline photo → scène produit une proposition éditable ; sa note /20 est un objectif d'itération, mesuré pour l'instant sur une fixture analytique.
+- Photo → scène : modules `photo_*` purs sans bpy (testables hors Blender) ; bpy uniquement dans `photo_scene.py`, `photo_pipeline.py`, `photo_workflow.py`. Lumières d'appoint invisibles à la caméra, aux reflets et à la transmission.
 
 ## État et tests
 
-Noyau : `tests_blender.py` (fixtures locales et faux serveur HTTP, aucun appel payant). Multivues : `tests_modular_blender.py`. Exécution : `blender --background --factory-startup --python-exit-code 1 --python <script.py>`.
+Noyau : `tests_blender.py` (fixtures locales et faux serveur HTTP, aucun appel payant). Multivues : `tests_modular_blender.py`. Photo → scène : `tests_photo.py` (numpy pur, sans Blender), `tests_photo_blender.py` (pipeline complet local et API simulée), `tests_photo_worker.py` (alignement OpenCV). Exécution : `blender --background --factory-startup --python-exit-code 1 --python <script.py>`.
 
 Les recettes et contrôles de scènes réelles ont souvent besoin de fichiers dans `output/` et de bibliothèques sur le poste d'origine ; ces dépendances ne sont pas distribuées. Ne pas lancer tous les scripts à l'aveugle. `docs/evidence/` conserve une sélection de rapports techniques, avec provenance et statut historique.
 
