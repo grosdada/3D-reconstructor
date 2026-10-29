@@ -1,0 +1,45 @@
+{
+  "before": {
+    "objects": 7326,
+    "meshes": 6104,
+    "unique_triangles": 1284989,
+    "evaluated_triangles": 9886609
+  },
+  "after": {
+    "objects": 164,
+    "meshes": 91,
+    "unique_triangles": 1606137,
+    "evaluated_triangles": 2886117
+  },
+  "seconds": 134.13895739999134,
+  "groups": 68,
+  "coordinates": "PA_SourceLocal / PA_SourceSeed / PA_BuildingLocal; projection rest attributes preserved",
+  "mobility": "One parent per building; material-separated geometry inside each building",
+  "original_v1": {
+    "objects": 7034,
+    "meshes": 5876,
+    "unique_triangles": 1290529,
+    "evaluated_triangles": 10010212
+  },
+  "assets": [
+    {
+      "library": "<ASSET_LIBRARY>/SKetch-Fab\\bagnoles.blend",
+      "collection": "1967_rover_p6_2000tc_low_poly",
+      "triangles": 16046,
+      "length_m": 4.53
+    },
+    {
+      "library": "<ASSET_LIBRARY>/SKetch-Fab\\bagnoles.blend",
+      "collection": "triumph_dolomite_sprint",
+      "triangles": 57731,
+      "length_m": 4.12
+    },
+    {
+      "library": "<ASSET_LIBRARY>/SKetch-Fab\\bagnoles.blend",
+      "collection": "low-poly_jaguar_xj-s",
+      "triangles": 24797,
+      "length_m": 4.87
+    }
+  ],
+  "total_seconds": 206.3765314000193
+}

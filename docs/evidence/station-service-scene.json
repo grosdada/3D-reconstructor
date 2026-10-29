@@ -1,0 +1,96 @@
+{
+  "source": "<PROJECT>/output\\gas-station-exterior-v1\\station-exterieur.blend",
+  "source_sha256": "3a5c45f971a01bafa57c5b8379a0195cbef5d2a522ad9ada2cd93868b5d9d350",
+  "materials": [
+    "STATION · enduit ivoire ancien",
+    "STATION · enduit ivoire ancien · detail projete · detail projete · detail projete",
+    "STATION · tole bleu desature · detail projete · detail projete · detail projete"
+  ],
+  "interior": {
+    "modules": [
+      "INTERIEUR · couloir et cloisons annexe",
+      "INTERIEUR · entree annexe",
+      "INTERIEUR · atelier lateral",
+      "INTERIEUR · porte de service",
+      "INTERIEUR · fond du couloir",
+      "INTERIEUR · liaison boutique",
+      "INTERIEUR · etabli atelier",
+      "INTERIEUR · etagere haute",
+      "INTERIEUR · boutique et arriere boutique",
+      "INTERIEUR · reserve",
+      "INTERIEUR · comptoir boutique",
+      "INTERIEUR · rayonnages boutique",
+      "INTERIEUR · appliques et gaines"
+    ],
+    "placeholders_hidden": [
+      "Boutique · reserve sombre",
+      "Annexe · fond porte",
+      "Annexe · porte condamnee",
+      "Annexe · fenetre sombre"
+    ],
+    "shells_opened": [
+      "Boutique · murs · STATION · enduit ivoire ancien",
+      "Annexe · enduit · STATION · enduit ivoire ancien"
+    ],
+    "layout": "Annex corridor, two service rooms, connection to front shop and rear storeroom; estimated from reference interiors."
+  },
+  "dressing": {
+    "library": "<ASSET_LIBRARY>/Trash-kit\\TrashKit.blend",
+    "source_meshes": [
+      {
+        "asset": "Base_Trash_Heap_A",
+        "triangles": 562
+      },
+      {
+        "asset": "Base_Trash_Heap_C",
+        "triangles": 209
+      },
+      {
+        "asset": "Base_Trash_Heap_F",
+        "triangles": 182
+      },
+      {
+        "asset": "Base_Trash_Bag_A",
+        "triangles": 47
+      },
+      {
+        "asset": "Base_Trash_Rubble_A",
+        "triangles": 23
+      },
+      {
+        "asset": "Base_Trash_Rubble_C",
+        "triangles": 18
+      },
+      {
+        "asset": "Base_Trash_Bottle_A",
+        "triangles": 88
+      },
+      {
+        "asset": "Base_Trash_Can_A",
+        "triangles": 77
+      },
+      {
+        "asset": "Base_Trash_Plastic_A",
+        "triangles": 22
+      }
+    ],
+    "instances": 91,
+    "unique_triangles": 1228,
+    "roofs": [
+      "Boutique · toit",
+      "Annexe · toit",
+      "Tole de couverture et nervures · STATION · acier peint gris"
+    ],
+    "placement": "Weighted to edges and corners, clear main entrance, independent movable parents, shared mesh and UV atlas."
+  },
+  "metrics": {
+    "objects": 542,
+    "meshes": 417,
+    "unique_triangles": 12386,
+    "evaluated_triangles": 101479
+  },
+  "pure_materials": [
+    "PA · BLANC patine procedural",
+    "PA · BLEU patine procedural"
+  ]
+}

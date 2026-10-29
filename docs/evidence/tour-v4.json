@@ -1,0 +1,70 @@
+{
+  "geometry_other_than_foundations_preserved": true,
+  "foundations": [
+    {
+      "name": "Dalle soubassement",
+      "bottom": -0.21000000834465027,
+      "top": 0.28999999165534973,
+      "wall_bottom": 0.25
+    },
+    {
+      "name": "Dalle soubassement.001",
+      "bottom": -0.21000000834465027,
+      "top": 0.28999999165534973,
+      "wall_bottom": 0.25
+    },
+    {
+      "name": "Dalle soubassement.002",
+      "bottom": -0.21000000834465027,
+      "top": 0.28999999165534973,
+      "wall_bottom": 0.25
+    }
+  ],
+  "grass_sources": [
+    {
+      "source": "Grass_Basic-Strands_B_spring-summer",
+      "object": "V4_GRASS_00",
+      "triangles": 32,
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "source": "Grass_Wild_C_spring-summer",
+      "object": "V4_GRASS_01",
+      "triangles": 289,
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "source": "Grass_Basic-dry_D_spring-summer",
+      "object": "V4_GRASS_02",
+      "triangles": 1467,
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    }
+  ],
+  "grass_instances": 73116,
+  "viewport_instances": 18279,
+  "grass_unique_triangles": 1788,
+  "grass_virtual_triangles": 15307696,
+  "terrain_faces": 9226,
+  "grass_outside_pavements": true,
+  "assembly_movable": true,
+  "hdri": "kloppenheim_05_puresky_4k.exr",
+  "hdri_source": "K:\\Connector-Blender\\HDR\\HDRI-Haven\\Pure-sky\\kloppenheim_05_puresky_4k.exr",
+  "hdri_strength": 0.8,
+  "hdri_rotation_degrees": 105,
+  "images_unpacked": []
+}

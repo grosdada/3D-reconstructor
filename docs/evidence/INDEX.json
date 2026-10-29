@@ -1,0 +1,51 @@
+[
+  {
+    "file": "cockpit-multivues.json",
+    "source": "output/cockpit-albedo-multivues-test/validation.json",
+    "source_sha256": "551b11793b38503fa191758aa9a1a08230f9fb1a2203728c7add01e7329d36a9",
+    "status": "archived evidence; not re-rendered for publication",
+    "path_redaction": true
+  },
+  {
+    "file": "tour-v4.json",
+    "source": "output/tour-belvedere-v4/validation.json",
+    "source_sha256": "c1149ff3c0dda35d57a7a3627ec7b50c913e529419e4227371e0e157cab634fb",
+    "status": "archived evidence; not re-rendered for publication",
+    "path_redaction": true
+  },
+  {
+    "file": "sas-v2.2.json",
+    "source": "output/station-sas-v2.2/validation.json",
+    "source_sha256": "5d6e74f0160db2f27b64e5362144c7137c07af3419d9caa0731d37a7b885e332",
+    "status": "archived evidence; not re-rendered for publication",
+    "path_redaction": true
+  },
+  {
+    "file": "ville-optimisation.json",
+    "source": "output/ville-brutaliste-v2/optimization.json",
+    "source_sha256": "1ab7f6176cc1eb0eb9f2574945f23231f25c9e63e1b221dc9937318989ee312b",
+    "status": "archived evidence; not re-rendered for publication",
+    "path_redaction": true
+  },
+  {
+    "file": "ville-v4.json",
+    "source": "output/ville-brutaliste-v4-mobilier/validation.json",
+    "source_sha256": "34a27b9ee60f54914073d8e7930f259bb21d6660e9a32508686daa43a68d9e9e",
+    "status": "archived evidence; not re-rendered for publication",
+    "path_redaction": true
+  },
+  {
+    "file": "station-service-v2.json",
+    "source": "output/gas-station-v2/validation.json",
+    "source_sha256": "11064a907d61c0234eee167f6b90c28c0568f68c8926a8fdff252850a29efa15",
+    "status": "archived evidence; not re-rendered for publication",
+    "path_redaction": true
+  },
+  {
+    "file": "station-service-scene.json",
+    "source": "output/gas-station-v2/scene-report.json",
+    "source_sha256": "8305105ac63ade0ad30b1b0a71633f2f656e9d7f096ed90756be46b2f554ff42",
+    "status": "archived evidence; not re-rendered for publication",
+    "path_redaction": true
+  }
+]

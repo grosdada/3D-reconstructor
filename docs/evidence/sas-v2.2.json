@@ -1,0 +1,228 @@
+{
+  "procedural_materials": [
+    "V2 · email use des sas",
+    "V2 · brides peinture ecailee",
+    "V2 · acier nickel terni",
+    "V2 · ocre securite use",
+    "V2 · plaques de sol use fine"
+  ],
+  "hybrid_materials": [
+    "ST · panneaux ivoire vieilli",
+    "ST · sol resine creme",
+    "ST · coffrets gris"
+  ],
+  "plates": [
+    {
+      "name": "Plaque de passage antiderapante",
+      "vertices": 48,
+      "triangles": 92,
+      "notches": 4,
+      "thickness_m": 0.016
+    },
+    {
+      "name": "Plaque de passage antiderapante.001",
+      "vertices": 48,
+      "triangles": 92,
+      "notches": 4,
+      "thickness_m": 0.016
+    },
+    {
+      "name": "Plaque de passage antiderapante.002",
+      "vertices": 48,
+      "triangles": 92,
+      "notches": 4,
+      "thickness_m": 0.016
+    },
+    {
+      "name": "Plaque de passage antiderapante.003",
+      "vertices": 48,
+      "triangles": 92,
+      "notches": 4,
+      "thickness_m": 0.016
+    },
+    {
+      "name": "Plaque de passage antiderapante.004",
+      "vertices": 48,
+      "triangles": 92,
+      "notches": 4,
+      "thickness_m": 0.016
+    },
+    {
+      "name": "Plaque de passage antiderapante.005",
+      "vertices": 48,
+      "triangles": 92,
+      "notches": 4,
+      "thickness_m": 0.016
+    },
+    {
+      "name": "Plaque de passage antiderapante.006",
+      "vertices": 48,
+      "triangles": 92,
+      "notches": 4,
+      "thickness_m": 0.016
+    },
+    {
+      "name": "Plaque de passage antiderapante.007",
+      "vertices": 48,
+      "triangles": 92,
+      "notches": 4,
+      "thickness_m": 0.016
+    },
+    {
+      "name": "Plaque de passage antiderapante.008",
+      "vertices": 48,
+      "triangles": 92,
+      "notches": 4,
+      "thickness_m": 0.016
+    },
+    {
+      "name": "Plaque de passage antiderapante.009",
+      "vertices": 48,
+      "triangles": 92,
+      "notches": 4,
+      "thickness_m": 0.016
+    },
+    {
+      "name": "Plaque de passage antiderapante.010",
+      "vertices": 48,
+      "triangles": 92,
+      "notches": 4,
+      "thickness_m": 0.016
+    },
+    {
+      "name": "Plaque de passage antiderapante.011",
+      "vertices": 48,
+      "triangles": 92,
+      "notches": 4,
+      "thickness_m": 0.016
+    },
+    {
+      "name": "Plaque de passage antiderapante.012",
+      "vertices": 48,
+      "triangles": 92,
+      "notches": 4,
+      "thickness_m": 0.016
+    },
+    {
+      "name": "Plaque de passage antiderapante.013",
+      "vertices": 48,
+      "triangles": 92,
+      "notches": 4,
+      "thickness_m": 0.016
+    },
+    {
+      "name": "Plaque de passage antiderapante.014",
+      "vertices": 48,
+      "triangles": 92,
+      "notches": 4,
+      "thickness_m": 0.016
+    },
+    {
+      "name": "Plaque de passage antiderapante.015",
+      "vertices": 48,
+      "triangles": 92,
+      "notches": 4,
+      "thickness_m": 0.016
+    },
+    {
+      "name": "Plaque de passage antiderapante.016",
+      "vertices": 48,
+      "triangles": 92,
+      "notches": 4,
+      "thickness_m": 0.016
+    },
+    {
+      "name": "Plaque de passage antiderapante.017",
+      "vertices": 48,
+      "triangles": 92,
+      "notches": 4,
+      "thickness_m": 0.016
+    },
+    {
+      "name": "Sas · seuil franchissable",
+      "vertices": 56,
+      "triangles": 108,
+      "notches": 4,
+      "thickness_m": 0.009
+    },
+    {
+      "name": "Sas · seuil franchissable.001",
+      "vertices": 56,
+      "triangles": 108,
+      "notches": 4,
+      "thickness_m": 0.009
+    },
+    {
+      "name": "Sas · seuil franchissable.002",
+      "vertices": 56,
+      "triangles": 108,
+      "notches": 4,
+      "thickness_m": 0.009
+    },
+    {
+      "name": "Sas · seuil franchissable.003",
+      "vertices": 56,
+      "triangles": 108,
+      "notches": 4,
+      "thickness_m": 0.009
+    },
+    {
+      "name": "Sas · seuil franchissable.004",
+      "vertices": 56,
+      "triangles": 108,
+      "notches": 4,
+      "thickness_m": 0.009
+    },
+    {
+      "name": "Sas · seuil franchissable.005",
+      "vertices": 56,
+      "triangles": 108,
+      "notches": 4,
+      "thickness_m": 0.009
+    },
+    {
+      "name": "Sas · seuil franchissable.006",
+      "vertices": 56,
+      "triangles": 108,
+      "notches": 4,
+      "thickness_m": 0.009
+    }
+  ],
+  "checks": {
+    "parents_transforms_unchanged": true,
+    "moving_module_children_follow": true,
+    "neighbors_unchanged": true,
+    "plates": {
+      "Plaque de passage antiderapante": "closed manifold; positive face areas; 4 modeled notches",
+      "Plaque de passage antiderapante.001": "closed manifold; positive face areas; 4 modeled notches",
+      "Plaque de passage antiderapante.002": "closed manifold; positive face areas; 4 modeled notches",
+      "Plaque de passage antiderapante.003": "closed manifold; positive face areas; 4 modeled notches",
+      "Plaque de passage antiderapante.004": "closed manifold; positive face areas; 4 modeled notches",
+      "Plaque de passage antiderapante.005": "closed manifold; positive face areas; 4 modeled notches",
+      "Plaque de passage antiderapante.006": "closed manifold; positive face areas; 4 modeled notches",
+      "Plaque de passage antiderapante.007": "closed manifold; positive face areas; 4 modeled notches",
+      "Plaque de passage antiderapante.008": "closed manifold; positive face areas; 4 modeled notches",
+      "Plaque de passage antiderapante.009": "closed manifold; positive face areas; 4 modeled notches",
+      "Plaque de passage antiderapante.010": "closed manifold; positive face areas; 4 modeled notches",
+      "Plaque de passage antiderapante.011": "closed manifold; positive face areas; 4 modeled notches",
+      "Plaque de passage antiderapante.012": "closed manifold; positive face areas; 4 modeled notches",
+      "Plaque de passage antiderapante.013": "closed manifold; positive face areas; 4 modeled notches",
+      "Plaque de passage antiderapante.014": "closed manifold; positive face areas; 4 modeled notches",
+      "Plaque de passage antiderapante.015": "closed manifold; positive face areas; 4 modeled notches",
+      "Plaque de passage antiderapante.016": "closed manifold; positive face areas; 4 modeled notches",
+      "Plaque de passage antiderapante.017": "closed manifold; positive face areas; 4 modeled notches",
+      "Sas · seuil franchissable": "closed manifold; positive face areas; 4 modeled notches",
+      "Sas · seuil franchissable.001": "closed manifold; positive face areas; 4 modeled notches",
+      "Sas · seuil franchissable.002": "closed manifold; positive face areas; 4 modeled notches",
+      "Sas · seuil franchissable.003": "closed manifold; positive face areas; 4 modeled notches",
+      "Sas · seuil franchissable.004": "closed manifold; positive face areas; 4 modeled notches",
+      "Sas · seuil franchissable.005": "closed manifold; positive face areas; 4 modeled notches",
+      "Sas · seuil franchissable.006": "closed manifold; positive face areas; 4 modeled notches"
+    },
+    "repair_preserved": true,
+    "volume_preserved": true,
+    "lights_unchanged": true,
+    "plate_base_triangles_before": 258,
+    "plate_base_triangles_after": 2412
+  }
+}

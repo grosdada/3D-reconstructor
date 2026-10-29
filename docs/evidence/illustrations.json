@@ -1,0 +1,92 @@
+[
+  {
+    "id": "cockpit",
+    "source": "output/cockpit-albedo-multivues-test/avant-relit.png",
+    "source_sha256": "ad986328039e98546d73171ca4a5ae8730824be98a004c5dfc00478621447a9d",
+    "original_dimensions": [
+      1456,
+      816
+    ],
+    "embedded_dimensions": [
+      1200,
+      673
+    ],
+    "jpeg_bytes": 95657,
+    "operation": "resize and JPEG compression only; no generative retouch"
+  },
+  {
+    "id": "tour",
+    "source": "output/tour-belvedere-v4/CAM_01.png",
+    "source_sha256": "8c28cbccdedb07094307ee36eed8731807272306881fab81a1bf4f979101127c",
+    "original_dimensions": [
+      1000,
+      1200
+    ],
+    "embedded_dimensions": [
+      833,
+      1000
+    ],
+    "jpeg_bytes": 96787,
+    "operation": "resize and JPEG compression only; no generative retouch"
+  },
+  {
+    "id": "sas",
+    "source": "output/station-sas-v2.2/montage-sas-v2.2.jpg",
+    "source_sha256": "3a33f07e3c98fc4dfbdcea484402f4e0c2efc8bbf2d38b1d67d476f3ab2fe22c",
+    "original_dimensions": [
+      1800,
+      1250
+    ],
+    "embedded_dimensions": [
+      1200,
+      833
+    ],
+    "jpeg_bytes": 121338,
+    "operation": "resize and JPEG compression only; no generative retouch"
+  },
+  {
+    "id": "ville",
+    "source": "output/ville-brutaliste-v4-mobilier/montage-mobilier-brume.jpg",
+    "source_sha256": "16f417ba6aec7554b27ef9517796f99c1bedf447bf9d5c2c825fe01d508f388b",
+    "original_dimensions": [
+      2200,
+      1330
+    ],
+    "embedded_dimensions": [
+      1200,
+      725
+    ],
+    "jpeg_bytes": 99095,
+    "operation": "resize and JPEG compression only; no generative retouch"
+  },
+  {
+    "id": "gas_ext",
+    "source": "output/gas-station-v2/montage-exterieur.jpg",
+    "source_sha256": "5f20f7918cb08f698e2107cc147eec36cd5bf6409b65094ecb6d5e106c6a49d3",
+    "original_dimensions": [
+      1848,
+      1416
+    ],
+    "embedded_dimensions": [
+      1200,
+      919
+    ],
+    "jpeg_bytes": 91535,
+    "operation": "resize and JPEG compression only; no generative retouch"
+  },
+  {
+    "id": "gas_int",
+    "source": "output/gas-station-v2/montage-interieur.jpg",
+    "source_sha256": "9cb02d222f5c49b836dde5b7969b94cca815b31d685733d9d88340ee6dfd1a36",
+    "original_dimensions": [
+      1848,
+      1416
+    ],
+    "embedded_dimensions": [
+      1200,
+      919
+    ],
+    "jpeg_bytes": 85041,
+    "operation": "resize and JPEG compression only; no generative retouch"
+  }
+]

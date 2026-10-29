@@ -1,0 +1,25 @@
+{
+  "addon": [
+    0,
+    5,
+    3
+  ],
+  "preserved_v3_objects": 318,
+  "preserved_geometry_materials_transforms": true,
+  "load_and_update_seconds": 1.0519706999184564,
+  "metrics": {
+    "objects": 451,
+    "meshes": 326,
+    "unique_triangles": 1612275,
+    "evaluated_triangles": 4415522
+  },
+  "movable_sign_children_and_uvs": true,
+  "neighbours_unchanged": true,
+  "furniture_objects": 86,
+  "furniture_shared_meshes": 6,
+  "missing_images": [],
+  "used_linked_data": [],
+  "ring_control_test": true,
+  "foreground_haze_unchanged": true,
+  "duplicate_recipe_disabled": true
+}

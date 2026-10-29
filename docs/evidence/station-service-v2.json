@@ -1,0 +1,84 @@
+{
+  "addon_version": [
+    0,
+    6,
+    1
+  ],
+  "weather_and_interior_operators": "passed",
+  "duplicate_build_guard": "passed",
+  "projection_mix_slider": "passed",
+  "packed_images": 15,
+  "image_sizes": {
+    "Base_Trash_BaseColor.png": [
+      2048,
+      2048
+    ],
+    "Base_Trash_Metallic.jpg": [
+      2048,
+      2048
+    ],
+    "Base_Trash_NormalGL.jpg": [
+      2048,
+      2048
+    ],
+    "Base_Trash_Opacity.jpg": [
+      2048,
+      2048
+    ],
+    "Base_Trash_Roughness.jpg": [
+      2048,
+      2048
+    ],
+    "Base_Trash_Specular.jpg": [
+      2048,
+      2048
+    ],
+    "detail-albedo.png": [
+      1536,
+      1024
+    ],
+    "detail-albedo.png.001": [
+      1536,
+      1024
+    ],
+    "detail-albedo.png.002": [
+      1536,
+      1024
+    ],
+    "guide-depth.exr": [
+      1536,
+      1024
+    ],
+    "guide-depth.exr.001": [
+      1536,
+      1024
+    ],
+    "guide-depth.exr.002": [
+      1536,
+      1024
+    ],
+    "guide-mask.png": [
+      1536,
+      1024
+    ],
+    "guide-mask.png.001": [
+      1536,
+      1024
+    ],
+    "guide-mask.png.002": [
+      1536,
+      1024
+    ]
+  },
+  "material_library": {
+    "materials": [
+      "PA · BLEU patine procedural",
+      "PA · BLANC patine procedural"
+    ],
+    "images": []
+  },
+  "movable_module_checks": 34,
+  "projection_and_weather_attributes_preserved": true,
+  "connecting_shell_openings": "clear at doorway centre; not a complete navigation collision test",
+  "v1_unchanged": true
+}

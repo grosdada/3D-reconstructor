@@ -1,0 +1,13 @@
+schema_version = "1.0.0"
+id = "pano_atelier"
+version = "0.6.1"
+name = "Pano Atelier"
+tagline = "Explore image-based scenes and repair projected textures"
+maintainer = "Pano Atelier"
+type = "add-on"
+blender_version_min = "4.2.0"
+license = ["SPDX:GPL-3.0-or-later"]
+tags = ["Material", "3D View"]
+[permissions]
+files = "Import images and depth; save masks, textures and reports"
+network = "Generate and inspect images using a configured API"

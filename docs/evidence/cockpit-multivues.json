@@ -1,0 +1,27 @@
+{
+  "checks": {
+    "geometry_and_parents_preserved": true,
+    "module_moves_with_children": true,
+    "neighbors_unchanged": true,
+    "projection_stable_on_translation": true,
+    "projection_stable_on_rotation": true,
+    "all_generated_maps_packed": true,
+    "projected_materials_are_principled": true,
+    "glass_not_projected": true
+  },
+  "views": 6,
+  "projected_objects": 469,
+  "materials": [
+    "Abat-jour · textile écru",
+    "Chants · ivoire clair",
+    "Coque · peinture ivoire satinée",
+    "Panneaux · gris chaud",
+    "Porte · brun tabac",
+    "Siège · vinyle olive grisé",
+    "Sol · résine taupe satinée"
+  ],
+  "geometry_before": "26d0ba4008fa0ec2da826b82be80974f73fb0ede31d5a78e7fa685538ed95648",
+  "geometry_after": "26d0ba4008fa0ec2da826b82be80974f73fb0ede31d5a78e7fa685538ed95648",
+  "method": "Albedo base-color only, depth visibility, angle^4 weights and border feather. Constant rest coordinates after bevels. Original shaders for glass/screens/metal/instruments.",
+  "limitations": "Generated albedo is an approximation; fine residual shading and misaligned painted details may remain. Hidden geometry keeps original V2 colors."
+}

@@ -1,0 +1,33 @@
+{
+  "date": "2026-10-29",
+  "blender": "5.2.1 LTS",
+  "core": {
+    "run": 17,
+    "failures": 0,
+    "errors": 0
+  },
+  "modular": {
+    "run": 5,
+    "failures": 0,
+    "errors": 0
+  },
+  "network": "local simulated HTTP only; no paid image API call",
+  "historical_scene_reports": "archived evidence, not re-rendered for publication",
+  "code_version": "0.6.1",
+  "html_browser": {
+    "browser": "Edge / Playwright headless",
+    "desktop_viewport": [
+      1440,
+      1000
+    ],
+    "mobile_viewport": [
+      390,
+      844
+    ],
+    "embedded_images_loaded": 6,
+    "javascript_errors": [],
+    "mobile_horizontal_overflow": false,
+    "copy_brief_status": "Brief copié.",
+    "visual_check": "desktop screenshot inspected"
+  }
+}
