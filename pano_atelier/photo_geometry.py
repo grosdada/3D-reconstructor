@@ -83,13 +83,15 @@ def ransac_plane(P,N,candidates,rng,iterations=160,angle=20.,tol=(.012,.012),all
     threshold=tol[0]+tol[1]*dist
     best=None; best_count=0
     pool=allowed if allowed is not None else np.ones(len(P),bool)
+    sub=np.flatnonzero(pool)
+    if len(sub)>40000: sub=rng.choice(sub,40000,replace=False)  # score hypotheses on a subsample
+    Ps,Ns,ts=P[sub],N[sub],threshold[sub]
     for i in rng.choice(idx,size=min(iterations,len(idx)),replace=False):
         n=N[i]; c=P[i]
-        inl=pool&(abs((P-c)@n)<threshold)&((N@n)>cos)
-        k=int(inl.sum())
-        if k>best_count: best_count=k; best=(n,c,inl)
+        k=int(((abs((Ps-c)@n)<ts)&((Ns@n)>cos)).sum())
+        if k>best_count: best_count=k; best=(n,c)
     if best is None: return None
-    n,c,inl=best
+    n,c=best; inl=pool&(abs((P-c)@n)<threshold)&((N@n)>cos)
     for _ in range(2):
         sample=np.flatnonzero(inl)
         if len(sample)<8: return None
@@ -240,12 +242,139 @@ def shell(points,mask,right,down,origin,thickness,limits=(),floor=None,smooth=3)
     for t in tris:
         for a,b in ((t[0],t[1]),(t[1],t[2]),(t[2],t[0])):
             key=(min(a,b),max(a,b)); edges[key]=edges.get(key,0)+1
+    # The outline follows grid cells (staircase): relax it along itself, then
+    # re-push the back along the new rays so the volume stays closed.
+    nbr={}
+    for (a,b),k in edges.items():
+        if k==1: nbr.setdefault(a,[]).append(b); nbr.setdefault(b,[]).append(a)
+    loop=np.array([v for v,l in nbr.items() if len(l)==2],np.int64)
+    if len(loop):
+        pair=np.array([nbr[v] for v in loop],np.int64)
+        for _ in range(4):
+            front[loop]=.5*front[loop]+.25*(front[pair[:,0]]+front[pair[:,1]])
+        rays=front-origin; rays/=np.maximum(np.linalg.norm(rays,axis=1,keepdims=True),1e-9)
+        back=front+rays*depth[:,None]
+        if floor is not None: back[:,2]=np.maximum(back[:,2],floor)
     faces=[tuple(int(i) for i in t) for t in tris]
     faces+=[(int(t[2])+n,int(t[1])+n,int(t[0])+n) for t in tris]
     for t in tris:
         for a,b in ((t[0],t[1]),(t[1],t[2]),(t[2],t[0])):
             if edges[(min(a,b),max(a,b))]==1: faces.append((int(b),int(a),int(a)+n,int(b)+n))
     return np.concatenate((front,back)),faces
+
+
+def _inside(points,origin,u,v,n,rect,thickness,tol=.03):
+    """Points inside a slab built by slab(origin,u,v,n,rect,thickness)."""
+    q=np.asarray(points,np.float64)-np.asarray(origin,np.float64)
+    a=q@u; b=q@v; c=-(q@n)
+    u0,v0,u1,v1=rect
+    return (a>u0-tol)&(a<u1+tol)&(b>v0-tol)&(b<v1+tol)&(c>-tol)&(c<thickness+tol)
+
+
+def fill_ratio(a,b,rect,cell=.1):
+    """Share of a rectangle (plane coordinates a,b) actually backed by points."""
+    u0,v0,u1,v1=rect; nu=max(1,int(math.ceil((u1-u0)/cell))); nv=max(1,int(math.ceil((v1-v0)/cell)))
+    occ=np.zeros((nv,nu),bool)
+    i=np.clip(((a-u0)/cell).astype(int),0,nu-1); j=np.clip(((b-v0)/cell).astype(int),0,nv-1); occ[j,i]=True
+    return float(U.dilate(occ,1).mean())
+
+
+def furniture(P,N,mask,right,down,origin,floor=None,limits=(),rng=None,min_explained=.35):
+    """Planar furniture: horizontal tops / seats and vertical fronts / backs → boxes.
+
+    Coplanar but separate pieces (two benches at the same height) are split by
+    image connectivity. A top whose front reaches the floor becomes a block
+    (cushion, cabinet); otherwise a thin top on a pedestal made of the points
+    under it. Returns (parts, residual mask); parts are (verts, faces) closed
+    slabs. Returns ([], mask) when planes explain too little (organic shapes).
+    """
+    m=np.asarray(mask,bool); h,w=m.shape; flat=m.ravel()
+    Pf=np.asarray(P,np.float64).reshape(-1,3); Nf=np.asarray(N,np.float64).reshape(-1,3)
+    count=int(flat.sum())
+    if count<60: return [],m
+    rng=rng or np.random.default_rng(3); origin=np.asarray(origin,np.float64)
+    valid=np.linalg.norm(Nf,axis=1)>.5
+    free=flat&valid; patches=[]
+    for _ in range(6):
+        found=ransac_plane(Pf-origin,Nf,free,rng,iterations=80,angle=18,tol=(.012,.01),allowed=free)
+        if found is None: break
+        n,_,inl=found
+        if inl.sum()<max(25,.06*count): break
+        free&=~inl; n=snap_normal(n,12.)
+        if not (abs(n[2])>.9 or abs(n[2])<.15): continue  # slanted: stays a relief
+        lab=U.label(inl.reshape(h,w),right,down)
+        sizes=np.bincount(lab[lab>=0]) if (lab>=0).any() else []
+        for i,size in enumerate(sizes):
+            if size>=max(20,.03*count): patches.append((n,(lab==i).ravel()))
+    explained=np.zeros(h*w,bool); parts=[]; tops=[]
+    base=floor if floor is not None else None
+    for n,sel in patches:
+        pts=Pf[sel]
+        if abs(n[2])>.9:
+            z=float(np.median(pts[:,2])); x0,x1=np.percentile(pts[:,0],(2,98)); y0,y1=np.percentile(pts[:,1],(2,98))
+            if x1-x0<.06 or y1-y0<.06: continue
+            rect=(float(x0),float(y0),float(x1),float(y1))
+            if fill_ratio(pts[:,0],pts[:,1],rect)<.6: continue  # L-shaped / bridged patch: a box would invent volume
+            if n[2]>0:
+                near=flat&(abs(Nf[:,2])<.3)&(Pf[:,2]<z-.01)&(Pf[:,0]>x0-.05)&(Pf[:,0]<x1+.05)&(Pf[:,1]>y0-.05)&(Pf[:,1]<y1+.05)
+                zs=Pf[near,2]
+                if base is not None and len(zs)>.25*sel.sum() and zs.min()<base+.2: bottom=base
+                else:
+                    band=zs[zs>z-.12]
+                    bottom=z-float(np.clip(z-np.percentile(band,5),.025,.1)) if len(band)>5 else z-.04
+                top=z
+            else: bottom,top=z,z+.04  # underside seen from below
+            verts,faces=slab((0,0,top),(1.,0,0),(0,1.,0),(0,0,1.),rect,top-bottom)
+            parts.append((verts,faces)); explained|=flat&_inside(Pf,(0,0,top),np.array((1.,0,0)),np.array((0,1.,0)),np.array((0,0,1.)),rect,top-bottom)
+            if n[2]>0 and bottom>(base if base is not None else bottom-1)+.15: tops.append((rect,bottom))
+        else:
+            u=np.cross((0,0,1.),n); u/=np.linalg.norm(u); k=float(np.median(pts@n))
+            a0,a1=np.percentile(pts@u,(2,98)); z0,z1=np.percentile(pts[:,2],(2,98))
+            if a1-a0<.06 or z1-z0<.06: continue
+            if fill_ratio(pts@u,pts[:,2],(a0,z0,a1,z1))<.6: continue
+            if base is not None and z0<base+.15: z0=base
+            thick=.08
+            for nl,kl in limits:  # fill the gap to a wall right behind (bench backs, cabinets)
+                nl=np.asarray(nl,np.float64)
+                if nl@n>.9 and 0<k-kl<.6: thick=max(thick,k-kl)
+            o=n*k; rect=(float(a0),float(z0),float(a1),float(z1))
+            verts,faces=slab(o,u,(0,0,1.),n,rect,thick)
+            parts.append((verts,faces)); explained|=flat&_inside(Pf,o,u,np.array((0,0,1.)),n,rect,thick)
+    for rect,bottom in tops:  # pedestal / legs: what stands under a thin top
+        x0,y0,x1,y1=rect
+        under=flat&~explained&(Pf[:,2]<bottom)&(Pf[:,0]>x0)&(Pf[:,0]<x1)&(Pf[:,1]>y0)&(Pf[:,1]<y1)
+        if under.sum()<15: continue
+        q=Pf[under]; px0,px1=np.percentile(q[:,0],(5,95)); py0,py1=np.percentile(q[:,1],(5,95))
+        px0,px1=(px0,px1) if px1-px0>.05 else ((px0+px1)/2-.025,(px0+px1)/2+.025)
+        py0,py1=(py0,py1) if py1-py0>.05 else ((py0+py1)/2-.025,(py0+py1)/2+.025)
+        low=base if base is not None else float(q[:,2].min())
+        r2=(float(px0),float(py0),float(px1),float(py1))
+        verts,faces=slab((0,0,bottom),(1.,0,0),(0,1.,0),(0,0,1.),r2,bottom-low)
+        parts.append((verts,faces)); explained|=flat&_inside(Pf,(0,0,bottom),np.array((1.,0,0)),np.array((0,1.,0)),np.array((0,0,1.)),r2,bottom-low)
+    if not parts or explained.sum()<min_explained*count: return [],m
+    return parts,(flat&~explained).reshape(h,w)
+
+
+def clusters(parts,gap=.1):
+    """Group boxes whose bounding boxes touch (within gap): one module per piece."""
+    boxes=[(np.asarray(v).min(0),np.asarray(v).max(0)) for v,_ in parts]; group=list(range(len(parts)))
+    def root(i):
+        while group[i]!=i: i=group[i]
+        return i
+    for i in range(len(parts)):
+        for j in range(i+1,len(parts)):
+            (a0,a1),(b0,b1)=boxes[i],boxes[j]
+            if np.all(a0-gap<=b1) and np.all(b0-gap<=a1): group[root(i)]=root(j)
+    out={}
+    for i in range(len(parts)): out.setdefault(root(i),[]).append(i)
+    return [[parts[i] for i in ids] for ids in out.values()]
+
+
+def merge(parts):
+    verts=[];faces=[]
+    for v,f in parts:
+        faces+=[tuple(int(i)+len(verts) for i in q) for q in f]; verts+=list(v)
+    return np.array(verts),faces
 
 
 def components(mask,right,down,min_pixels):
@@ -360,24 +489,32 @@ def analyse(depth,fov,valid=None,elements=(),width=192,seed=7,max_planes=10,edge
             z0=b0 if z0<b0+.12 else z0; z1=min(z1,b1-.08)
             el=element_for(comp,elements,w,h)
             kind='door' if z0<=b0+1e-6 else 'window'
+            seen=comp.ravel()&ok.ravel(); behind_d=(dist-t)[seen]
+            depth_behind=float(np.percentile(behind_d,90)) if seen.sum()>.7*comp.sum() else 99.
+            if depth_behind<.8: kind='niche'  # content close behind: a recess (hatch, shelf), no glass
             if el and el.get('kind') in ('window','door'): kind=el['kind']
             elif el and str(el.get('label','')).lower() in window_labels: kind='window'
-            holes.append((float(h0),float(z0),float(h1),float(z1),kind))
+            holes.append((float(h0),float(z0),float(h1),float(z1),kind,depth_behind))
         p['openings']=holes
         thick=.18
         verts,faces=slab(n*p['k'],u,(0,0,1.),n,(a0,b0,a1,b1),thick,[x[:4] for x in holes])
         add(dict(name='Mur %02d'%(i+1),kind='wall',group='Architecture',vertices=verts,faces=faces,
             pivot=np.array((*(n*p['k']+u*(a0+a1)/2)[:2],b0)),bevel=0,normal=n.tolist()),p['mask'])
-        for j,(h0,z0,h1,z1,kind) in enumerate(holes):
+        for j,(h0,z0,h1,z1,kind,behind) in enumerate(holes):
             frame_d=.06; inset=thick*.5
             base=n*(p['k']-inset)
             parts=[((h0,z0),(h0+frame_d,z1)),((h1-frame_d,z0),(h1,z1)),((h0+frame_d,z1-frame_d),(h1-frame_d,z1))]
-            if kind=='window': parts.append(((h0+frame_d,z0),(h1-frame_d,z0+frame_d)))
+            if kind in ('window','niche'): parts.append(((h0+frame_d,z0),(h1-frame_d,z0+frame_d)))
+            if kind=='niche':
+                d=max(thick+.02,behind+.02)
+                nv,nf=slab(n*(p['k']-d),u,(0,0,1.),n,(h0,z0,h1,z1),.03)
+                add(dict(name='Fond niche %02d-%02d'%(i+1,j+1),kind='frame',group='Ouvertures',vertices=nv,faces=nf,
+                    pivot=np.array((*(n*(p['k']-d)+u*(h0+h1)/2)[:2],z0)),bevel=0,opening='niche'))
             fv=[];ff=[]
             for (c0,r0),(c1,r1) in parts:
                 vv,f2=slab(base+n*.03,u,(0,0,1.),n,(c0,r0,c1,r1),.08)
                 ff+=[tuple(x+len(fv) for x in f) for f in f2]; fv+=list(vv)
-            add(dict(name='Cadre %s %02d-%02d'%('fenêtre' if kind=='window' else 'porte',i+1,j+1),kind='frame',group='Ouvertures',
+            add(dict(name='Cadre %s %02d-%02d'%({'window':'fenêtre','door':'porte','niche':'niche'}[kind],i+1,j+1),kind='frame',group='Ouvertures',
                 vertices=np.array(fv),faces=ff,pivot=np.array((*(base+u*(h0+h1)/2)[:2],z0)),bevel=.003,opening=kind))
             if kind=='window':
                 gv,gf=slab(base-n*.01,u,(0,0,1.),n,(h0+frame_d,z0+frame_d,h1-frame_d,z1-frame_d),.006)
@@ -387,8 +524,10 @@ def analyse(depth,fov,valid=None,elements=(),width=192,seed=7,max_planes=10,edge
     for p,name in ((floor,'Sol'),(ceiling,'Plafond')):
         if p is None: continue
         pts=Pw[p['mask']][:,:2]
-        ext=[pts]+[np.array([(p2['u']*p2['rect'][0]+p2['normal']*p2['k'])[:2],(p2['u']*p2['rect'][2]+p2['normal']*p2['k'])[:2]]) for p2 in walls]
-        xy=np.concatenate(ext); lo=np.percentile(xy,.5,axis=0)-.05; hi=np.percentile(xy,99.5,axis=0)+.05
+        lo=np.percentile(pts,.5,axis=0)-.05; hi=np.percentile(pts,99.5,axis=0)+.05
+        for p2 in walls:  # the room footprint: a barely visible floor still reaches every wall
+            for end in (p2['rect'][0],p2['rect'][2]):
+                e=(p2['u']*end+p2['normal']*p2['k'])[:2]; lo=np.minimum(lo,e); hi=np.maximum(hi,e)
         lo=np.maximum(lo,cam[:2]-60); hi=np.minimum(hi,cam[:2]+60)
         n=p['normal']; z=p['k']*n[2]
         if name=='Sol':
@@ -410,23 +549,40 @@ def analyse(depth,fov,valid=None,elements=(),width=192,seed=7,max_planes=10,edge
     backdrop_d=max(far*1.15,8.)
     distant=(dist.reshape(h,w)>max(35.,far*.9))&rest
     rest&=~distant
-    objects=components(rest,right,down,max(10,int(.0015*h*w)))
-    P3=Pw.reshape(h,w,3)
-    for k,m in enumerate(objects):
+    min_px=max(10,int(.0015*h*w))
+    objects=components(rest,right,down,min_px)
+    P3=Pw.reshape(h,w,3); N3=np.where(nok.reshape(h,w)[...,None],Nw.reshape(h,w,3),0)
+    def relief(m,name,el):
         pts=P3[m]; xy=pts[:,:2]
         width_h=float(np.ptp(xy@np.array((1,0)))+np.ptp(xy@np.array((0,1))))/2
         tall=float(np.ptp(pts[:,2]))
         thickness=float(np.clip(.6*min(max(width_h,.05),max(tall,.05)),.04,1.5))
-        el=element_for(m,elements,w,h)
         res=shell(P3,m,right,down,cam,thickness,limits,floor_z)
-        if res is None: continue
+        if res is None: return
         verts,faces=res
-        if np.ptp(verts[:len(verts)//2],axis=0).max()<.15: continue  # slivers along plane joints
-        low=verts[:,2].min(); centre=verts.mean(0)
+        if np.ptp(verts[:len(verts)//2],axis=0).max()<.15: return  # slivers along plane joints
         label=el.get('label') if el else None
-        add(dict(name=(label or 'Objet')[:40].capitalize()+' %02d'%(k+1),kind='object',group='Objets',vertices=verts,faces=faces,
-            pivot=np.array((centre[0],centre[1],low)),bevel=0,label=label,material_hint=(el or {}).get('material'),
-            thickness=thickness),m.ravel())
+        add(dict(name=(label or name)[:40].capitalize(),kind='object',group='Objets',vertices=verts,faces=faces,
+            pivot=np.array((*verts.mean(0)[:2],verts[:,2].min())),bevel=0,label=label,material_hint=(el or {}).get('material'),
+            thickness=thickness,shape='relief'),m.ravel())
+    furniture_count=0
+    for k,m in enumerate(objects):
+        el=element_for(m,elements,w,h)
+        parts,residual=furniture(P3,N3,m,right,down,cam,floor_z,limits,rng)
+        if not parts:
+            relief(m,'Objet %02d'%(k+1),el); continue
+        label=el.get('label') if el else None
+        pieces=clusters(parts); explained=(m&~residual).ravel(); pts=P3.reshape(-1,3)
+        for j,piece in enumerate(pieces):
+            verts,faces=merge(piece); furniture_count+=1
+            lo,hi=verts.min(0)-.03,verts.max(0)+.03
+            mine=explained&np.all((pts>=lo)&(pts<=hi),axis=1)
+            name=(label or 'Meuble %02d'%(k+1))[:36].capitalize()+('-%d'%(j+1) if len(pieces)>1 else '')
+            add(dict(name=name,kind='object',group='Objets',vertices=verts,faces=faces,
+                pivot=np.array((*verts.mean(0)[:2],verts[:,2].min())),bevel=.006,label=label,material_hint=(el or {}).get('material'),
+                shape='furniture',boxes=len(piece)),mine)
+        for j,sub in enumerate(components(residual,right,down,min_px)):
+            relief(sub,'Détail %02d-%02d'%(k+1,j+1),element_for(sub,elements,w,h))
     # A distant card keeps sky and far scenery visible behind everything.
     t=math.tan(math.radians(fov)/2)
     corners=np.array([((-1)*t,(1)*t*h/w,-1),(t,t*h/w,-1),(t,-t*h/w,-1),(-t,-t*h/w,-1)])*backdrop_d*1.02
@@ -437,6 +593,7 @@ def analyse(depth,fov,valid=None,elements=(),width=192,seed=7,max_planes=10,edge
     report=dict(gravity=frame['source'],camera_height=float(height),manhattan_yaw_deg=math.degrees(yaw),
         planes=[dict(kind=p['kind'],normal=[float(x) for x in p['normal']],k=p['k'],pixels=int(p['mask'].sum())) for p in planes],
         walls=len(walls),openings=sum(len(p.get('openings',[])) for p in walls),objects=sum(1 for m in modules if m['kind']=='object'),
+        furniture=furniture_count,
         floor=floor_z,ceiling=ceil_z,backdrop_distance=backdrop_d,analysis_size=[w,h],
         sky_fraction=float(sky.mean()),unexplained_fraction=float(((owner<0)&ok.ravel()).mean()))
     return dict(camera=camera,fov=float(fov),modules=modules,owner=owner.reshape(h,w),sky=sky,report=report,

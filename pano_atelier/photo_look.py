@@ -77,8 +77,15 @@ def texture_stats(albedo,mask=None,texel_m=.005):
     ring=(r>3)&(r<min(cy,cx)*.8)
     periodic=float(ac[ring].max()) if ring.any() else 0.
     period=float(r[ring][np.argmax(ac[ring])]*scale_px*texel_m) if ring.any() else 0.
+    # Tiles and bricks repeat along two directions; trims, planks and stripes along one.
+    periodic2d=0.
+    if ring.any():
+        theta=np.arctan2(yy-cy,xx-cx); best=theta[ring][np.argmax(ac[ring])]
+        diff=np.abs(((theta-best+np.pi/2)%np.pi)-np.pi/2)
+        across=ring&(diff>math.radians(60))
+        periodic2d=min(periodic,float(ac[across].max())) if across.any() else 0.
     return dict(mean=[float(x) for x in mean],contrast=contrast,saturation=s,hue=h,wavelength_m=wavelength,
-                anisotropy=aniso,angle=angle,periodic=periodic,period_m=period,detail=detail,texel_m=texel_m)
+                anisotropy=aniso,angle=angle,periodic=periodic,periodic2d=periodic2d,period_m=period,detail=detail,texel_m=texel_m)
 
 
 def classify(stats,kind='object',hint=None):
@@ -97,18 +104,57 @@ def classify(stats,kind='object',hint=None):
     hue=stats['hue']*360; sat=stats['saturation']; c=stats['contrast']
     warm=(15<hue<50) and sat>.25
     if 70<hue<170 and sat>.25 and c>.15: return 'foliage'
-    if stats['anisotropy']>.3 and warm: return 'wood'  # planks are periodic too: grain direction wins
-    if stats['periodic']>.35:
+    if stats['anisotropy']>.3 and warm and c>.06: return 'wood'  # planks are periodic too: grain direction wins
+    if stats.get('periodic2d',stats['periodic'])>.45 and c>.12:
         if kind in ('floor','ceiling'): return 'tile'
-        if (hue<25 or hue>340) and sat>.3: return 'brick'
+        if (hue<18 or hue>340) and sat>.45: return 'brick'
     if kind=='floor':
-        if warm: return 'wood'
-        return 'concrete' if c>.08 else 'tile'
+        return 'wood' if warm and c>.05 else 'concrete'
     if kind in ('wall','ceiling'):
         return 'concrete' if sat<.12 and c>.09 else 'plaster'
     if sat<.1 and c>.25: return 'metal'
+    if warm and sat>.35 and c<.12: return 'leather'
     if c<.06 and sat>.2: return 'fabric'
     return 'paint'
+
+
+def classify_trim(trim,main,kind='wall'):
+    """Secondary material of a surface. On architecture, a saturated warm yellow of
+    some lightness is brass / gilding (in colour alone, brass and tan leather are
+    alike, so furniture keeps the generic classification)."""
+    hue=trim['hue']*360; lum=float(np.dot(trim['mean'],(.2126,.7152,.0722)))
+    if kind in ('wall','ceiling','floor','frame') and 20<hue<60 and trim['saturation']>.45 and lum>.08: return 'metal'
+    if kind=='object' and 32<hue<60 and trim['saturation']>.5 and lum>.25: return 'metal'  # (hue in linear RGB)
+    if trim['saturation']<.1 and trim['contrast']>.2: return 'metal'
+    return classify(trim,'object')
+
+
+def split_materials(albedo,mask,texel_m=.005,shares=(.04,.4),separation=18.,seed=4,target=None,target_mask=None):
+    """Two colour clusters (k-means in Lab): the main surface and a secondary
+    material such as brass trims or inlays. Returns None when the surface is one
+    material. The mask is per texel (1 = secondary), lightly feathered."""
+    from .photo_score import lab
+    a=np.asarray(albedo,np.float32)[...,:3]; m=np.asarray(mask,bool)
+    if m.sum()<500: return None
+    rng=np.random.default_rng(seed); idx=np.flatnonzero(m.ravel())
+    sample=a.reshape(-1,3)[rng.choice(idx,min(len(idx),40000),replace=False)]
+    L=lab(U.linear_to_srgb(sample)[None])[0]
+    axis=np.linalg.svd(L-L.mean(0),full_matrices=False)[2][0]; proj=(L-L.mean(0))@axis
+    c=np.stack((L[proj<=np.percentile(proj,25)].mean(0),L[proj>=np.percentile(proj,75)].mean(0)))
+    for _ in range(12):
+        k=np.argmin(((L[:,None]-c[None])**2).sum(-1),1)
+        c=np.stack([L[k==i].mean(0) if np.any(k==i) else c[i] for i in range(2)])
+    share=np.bincount(k,minlength=2)/len(k); minor=int(np.argmin(share))
+    if not (shares[0]<=share[minor]<=shares[1]) or np.linalg.norm(c[0]-c[1])<separation: return None
+    def secondary(img,msk):
+        full=lab(U.linear_to_srgb(np.asarray(img,np.float32)[...,:3]))
+        return (((full-c[minor])**2).sum(-1)<((full-c[1-minor])**2).sum(-1))&np.asarray(msk,bool)
+    sec=secondary(a,m)
+    main_stats=texture_stats(a,m&~sec,texel_m); trim_stats=texture_stats(a,sec,texel_m)
+    # Clusters can be learnt on the photo region and applied to the atlas texels.
+    out=sec if target is None else secondary(target,np.ones(np.asarray(target).shape[:2],bool) if target_mask is None else target_mask)
+    return dict(mask=np.clip(U.blur(out.astype(np.float32),.8),0,1),main=main_stats,trim=trim_stats,
+                share=float(share[minor]),separation=float(np.linalg.norm(c[0]-c[1])))
 
 
 def recipe(stats,family):
@@ -329,8 +375,10 @@ def apply_look(render,depth,look,seed=11):
         M=np.asarray(g['matrix'],np.float32); x=np.clip(x@M.T+np.asarray(g['offset'],np.float32),0,None)
     s=U.linear_to_srgb(x)
     if g and g.get('tone'):
-        xs,ys=g['tone']; L=U.linear_to_srgb(U.luminance(x)); k=np.interp(L,xs,ys)/np.maximum(L,1e-4)
-        s=U.linear_to_srgb(U.srgb_to_linear(np.clip(s,0,1))*U.srgb_to_linear(np.clip(L*k,0,1))[...,None]/np.maximum(U.srgb_to_linear(L),1e-6)[...,None])
+        # Same clipped values on both sides of the ratio: highlights stay white.
+        xs,ys=g['tone']; Lc=np.clip(U.linear_to_srgb(U.luminance(np.clip(x,0,1))),0,1)
+        ratio=U.srgb_to_linear(np.interp(Lc,xs,ys))/np.maximum(U.srgb_to_linear(Lc),1e-6)
+        s=U.linear_to_srgb(U.srgb_to_linear(np.clip(s,0,1))*ratio[...,None])
     if g and g.get('curves'):
         for c,(xs,ys) in enumerate(g['curves']): s[...,c]=np.interp(s[...,c],xs,ys)
     sigma=look.get('grain',0.)
@@ -352,9 +400,20 @@ def fit_look(render,depth,photo,mask,base=None):
         return lp,lr,ok
     lp,lr,ok=lum_ratio(apply_look(render,depth,look))
     if ok.sum()>100: look['exposure']=float(np.clip(math.log2(np.median(lp[ok]/lr[ok])),-8,8))
+    # Glow and vignette estimated from the photo alone confuse light falloff and lens
+    # effects: keep the candidate that brings the render closest to the photo.
+    from .photo_score import score
+    target=U.linear_to_srgb(p)
+    def error(candidate):  # the fidelity score itself is the criterion, grade included
+        c=dict(candidate,grain=0.,grade=None)
+        g=fit_grade(U.srgb_to_linear(apply_look(render,depth,c)),p,m)
+        return -score(target,apply_look(render,depth,dict(c,grade=g)))['total']
+    glow0=float(look.get('glow_strength',0.))
+    look['glow_strength']=min(sorted({0.,.1,.25,min(glow0,.6)}),key=lambda g:error(dict(look,glow_strength=g)))
     lp,lr,ok=lum_ratio(apply_look(render,depth,look))
     if ok.sum()>100:
-        look['vignette']=fit_vignette(U.blur(np.where(ok,lp/np.maximum(lr,1e-4),1),3),ok)
+        fitted=fit_vignette(U.blur(np.where(ok,lp/np.maximum(lr,1e-4),1),3),ok)
+        look['vignette']=min(sorted({0.,.15,.3,.45,fitted}),key=lambda v:error(dict(look,vignette=v)))
         if look['vignette']>0:
             lp,lr,ok=lum_ratio(apply_look(render,depth,look))
             if ok.sum()>100: look['exposure']+=float(np.clip(math.log2(np.median(lp[ok]/lr[ok])),-2,2))

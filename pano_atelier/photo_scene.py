@@ -389,8 +389,13 @@ def detail_group(kind):
     return ng
 
 
-def material(name,family,atlas=None,colour=(.5,.5,.5),roughness=None,metallic=None):
-    """Principled material: atlas albedo in Base Color only, physical parameters from the family."""
+def material(name,family,atlas=None,colour=(.5,.5,.5),roughness=None,metallic=None,trim=None,emission=None):
+    """Principled material: atlas albedo in Base Color only, physical parameters from the family.
+
+    trim: optional {'family', 'mask' (Non-Color image in atlas UVs)} for a second
+    material sharing the surface; only roughness / metal / specular / coat change.
+    emission: radiance image (atlas UVs) of light sources seen in the photo, zero elsewhere.
+    """
     preset=LOOK.MATERIALS.get(family,LOOK.MATERIALS['paint'])
     m=bpy.data.materials.new(name); nt=nodes_on(m)
     bs=next(n for n in nt.nodes if n.type=='BSDF_PRINCIPLED')
@@ -407,6 +412,24 @@ def material(name,family,atlas=None,colour=(.5,.5,.5),roughness=None,metallic=No
         uv=nt.nodes.new('ShaderNodeUVMap'); uv.uv_map='Atlas'
         tex=nt.nodes.new('ShaderNodeTexImage'); tex.name='PA Atlas'; tex.image=atlas; tex.interpolation='Linear'
         nt.links.new(uv.outputs['UV'],tex.inputs['Vector']); nt.links.new(tex.outputs['Color'],bs.inputs['Base Color'])
+        if trim:  # second material on the same surface (brass trims…): physical inputs blended by a texel mask
+            other=LOOK.MATERIALS.get(trim['family'],LOOK.MATERIALS['metal'])
+            mk=nt.nodes.new('ShaderNodeTexImage'); mk.name='PA Masque matière'; mk.image=trim['mask']; mk.interpolation='Linear'
+            nt.links.new(uv.outputs['UV'],mk.inputs['Vector'])
+            for socket_name,a_value,b_value in (('Roughness',bs.inputs['Roughness'].default_value,trim.get('roughness',other['roughness'])),
+                    ('Metallic',bs.inputs['Metallic'].default_value,other.get('metallic',0.)),
+                    ('Specular IOR Level',bs.inputs['Specular IOR Level'].default_value,other.get('specular',.5)),
+                    ('Coat Weight',bs.inputs['Coat Weight'].default_value,other.get('coat',0.))):
+                if abs(a_value-b_value)<1e-6: continue
+                mr=nt.nodes.new('ShaderNodeMapRange'); mr.label=socket_name+' · matière / garniture'
+                nt.links.new(mk.outputs['Color'],mr.inputs['Value'])
+                mr.inputs['To Min'].default_value=a_value; mr.inputs['To Max'].default_value=b_value
+                nt.links.new(mr.outputs['Result'],bs.inputs[socket_name])
+            m[TAG+'_trim']=trim['family']
+        if emission is not None:
+            em=nt.nodes.new('ShaderNodeTexImage'); em.name='PA Émission photo'; em.image=emission; em.interpolation='Linear'
+            nt.links.new(uv.outputs['UV'],em.inputs['Vector']); nt.links.new(em.outputs['Color'],bs.inputs['Emission Color'])
+            bs.inputs['Emission Strength'].default_value=1.; m[TAG+'_emitter']=True
     m['pa_albedo_only']=True; m[TAG+'_family']=family
     return m
 
@@ -424,7 +447,8 @@ def add_detail(mat,recipe,pixel_group):
     g.inputs['Texel (m)'].default_value=recipe['texel_m']
     g.inputs['Relief (m)'].default_value=recipe['bump']
     g.inputs['Orientation'].default_value=recipe.get('angle',0.)
-    g.inputs['Rugosite'].default_value=bs.inputs['Roughness'].default_value
+    if bs.inputs['Roughness'].is_linked: nt.links.new(bs.inputs['Roughness'].links[0].from_socket,g.inputs['Rugosite'])
+    else: g.inputs['Rugosite'].default_value=bs.inputs['Roughness'].default_value
     pa=nt.nodes.new('ShaderNodeGroup'); pa.node_tree=pixel_group
     nt.links.new(pa.outputs[0],g.inputs['Angle pixel'])
     nt.links.new(g.outputs['Couleur'],bs.inputs['Base Color']); nt.links.new(g.outputs['Rugosite'],bs.inputs['Roughness'])

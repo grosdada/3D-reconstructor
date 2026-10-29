@@ -21,9 +21,9 @@ PHASES=(('camera','Camera mapping'),('model','Modélisation'),('texture','Textur
         ('procedural','Procédural'),('light','Lumière & effets'),('score','Note /20'))
 
 QUALITY={
-    'DRAFT':dict(analysis=128,density=128,atlas_max=512,view_size=384,samples=16,long=640,planner_samples=1200,rough=128,preview=320),
-    'STANDARD':dict(analysis=192,density=256,atlas_max=1024,view_size=640,samples=48,long=1024,planner_samples=2500,rough=200,preview=480),
-    'FINAL':dict(analysis=256,density=384,atlas_max=2048,view_size=1024,samples=128,long=1600,planner_samples=4000,rough=256,preview=640)}
+    'DRAFT':dict(analysis=192,density=128,atlas_max=512,view_size=384,samples=16,long=640,planner_samples=1200,rough=128,preview=320),
+    'STANDARD':dict(analysis=384,density=256,atlas_max=1024,view_size=640,samples=48,long=1024,planner_samples=2500,rough=200,preview=480),
+    'FINAL':dict(analysis=512,density=384,atlas_max=2048,view_size=1024,samples=128,long=1600,planner_samples=4000,rough=256,preview=640)}
 
 ALBEDO_PROMPT=('Convert this photo into its albedo / base colour map: identical framing, perspective and edges, every object in place. '
     'Remove cast shadows, shading, ambient occlusion, reflections and highlights; flat even light. No new objects, no text.')
@@ -286,25 +286,51 @@ def run(config,folder,progress=None):
             yield f'{name} : reprojection…'
             yield from blend_all()
         for mat in guide_mats.values(): bpy.data.materials.remove(mat)
+        # Light-emitting regions of the photo (window glare, lamps, backlit screens) are
+        # sources, not paint: their observed radiance becomes emission, their albedo dark.
+        yield 'Sources lumineuses visibles (émission)…'
+        emitters=0
+        for ob in textured:
+            a=atlases[ob.name]
+            rad,cov,_,_=yield POOL.submit(T.blend,a['P'],a['N'],a['M'],[dict(views[0],image=photo)])
+            glow_mask=np.clip((U.luminance(rad)-.6)/.3,0,1)*(cov>.05)
+            if (glow_mask>.5).sum()<30: continue
+            a['emission']=SC.image('PA émission · '+ob.name,rad*glow_mask[...,None],tex_dir/(ob.name+'-emission.png'))
+            a['colour']=a['colour']*(1-.9*glow_mask[...,None])
+            a['image']=SC.replace_image(a['image'],'PA Atlas · '+ob.name,a['colour'],tex_dir/(ob.name+'.png')); emitters+=1
         for ob in textured:  # stitch masks: share of each view in every texel
             a=atlases[ob.name]
             for k,v in enumerate(views):
                 if a['stitch'][k].max()>0: engine.write_image(tex_dir/f"{ob.name}-raccord-{v['name'].replace(' ','-')}.png",a['stitch'][k],True)
-        end(f"{len(views)} vues ({len(views)-len(planned)} photo), {len(textured)} atlas",views=[v['name'] for v in views])
+        end(f"{len(views)} vues ({len(views)-len(planned)} photo), {len(textured)} atlas, {emitters} sources",views=[v['name'] for v in views],emitters=emitters)
         # ------------------------------------------------ 4 · materials
         begin('material'); yield 'Matériaux physiques…'
         small_photo=U.resize(photo,aw,ah)
         mats={}; report=[]
+        pixel_m=2*math.tan(math.radians(fov)/2)/W
         for ob in textured:
             a=atlases[ob.name]; seen=(a['coverage']>.02)
-            if (seen&(a['stitch'][0]>.5)).sum()>256: seen&=a['stitch'][0]>.5  # statistics where the photo itself was projected
-            stats=LOOK.texture_stats(a['colour'],seen,a['texel'])
-            family=LOOK.classify(stats,ob['pa_photo_kind'],ob.get('pa_photo_hint'))
+            kind=ob['pa_photo_kind']
+            # Statistics on the photo region of the module (a continuous image), not on
+            # the atlas whose UV islands fake repetitive patterns; atlas as a fallback.
+            region=U.erode(labels==ob['pa_photo_index'],2)
+            if region.sum()>400: src,src_mask,texel=albedo,region,float(np.median(depth[region]))*pixel_m
+            else: src,src_mask,texel=a['colour'],seen,a['texel']
+            split=LOOK.split_materials(src,src_mask,texel,target=a['colour'],target_mask=a['M'])
+            stats=split['main'] if split else LOOK.texture_stats(src,src_mask,texel)
+            family=LOOK.classify(stats,kind,ob.get('pa_photo_hint'))
+            trim=None
+            if split:  # e.g. plaster panel with brass trims: one atlas, two physical materials
+                trim_family=LOOK.classify_trim(split['trim'],split['main'],kind)
+                if trim_family!=family:
+                    trim=dict(family=trim_family,mask=SC.image('PA masque · '+ob.name,split['mask'],tex_dir/(ob.name+'-masque-matiere.png'),True))
             preset=LOOK.MATERIALS[family]; sel=structure['owner']==ob['pa_photo_index']
             rough=LOOK.highlight_roughness(small_photo,sel,preset['roughness']) if sel.sum()>64 else preset['roughness']
-            mat=SC.material('PA · '+ob.name,family,a['image'],stats['mean'],rough); SC.assign(ob,mat)
+            rough=float(np.clip(rough,preset['roughness']*.5,min(1.,preset['roughness']*1.2)))  # highlights adjust, never redefine
+            mat=SC.material('PA · '+ob.name,family,a['image'],stats['mean'],rough,trim=trim,emission=a.get('emission')); SC.assign(ob,mat)
             mats[ob.name]=(mat,stats,family); report.append(dict(object=ob.name,family=family,roughness=round(rough,3),
-                metallic=preset.get('metallic',0.),contrast=round(stats['contrast'],3),wavelength_m=round(stats['wavelength_m'],4)))
+                metallic=preset.get('metallic',0.),contrast=round(stats['contrast'],3),wavelength_m=round(stats['wavelength_m'],4),
+                secondary=dict(family=trim['family'],share=round(split['share'],3)) if trim else None))
         if glass:
             gm=SC.material('PA · verre','glass',colour=(1.,1.,1.))
             for ob in glass: SC.assign(ob,gm)
@@ -317,13 +343,13 @@ def run(config,folder,progress=None):
                     vi=ob.data.loops[li].vertex_index; layer.data[li].uv=(x[vi]/W,1-y[vi]/H)
             SC.assign(ob,SC.emission_material('PA Fond · plaque photo',plate))
         (folder/'materiaux.json').write_text(json.dumps(report,indent=2,ensure_ascii=False),encoding='utf-8')
-        families=sorted({r['family'] for r in report})
+        families=sorted({r['family'] for r in report}|{r['secondary']['family'] for r in report if r.get('secondary')})
         end(', '.join(families),families=families)
         # ------------------------------------------------ 5 · procedural
         begin('procedural'); yield 'Détail procédural de près…'
         pixel=SC.pixel_angle_group(scene,ref); rec=[]
         for name,(mat,stats,family) in mats.items():
-            r=LOOK.recipe(stats,family)
+            r=LOOK.recipe(dict(stats,texel_m=atlases[name]['texel']),family)  # detail takes over below the atlas texel
             if SC.add_detail(mat,r,pixel): rec.append(dict(material=mat.name,**r))
         (folder/'procedural.json').write_text(json.dumps(rec,indent=2,ensure_ascii=False),encoding='utf-8')
         end(f'{len(rec)} matières émulées',recipes=len(rec))

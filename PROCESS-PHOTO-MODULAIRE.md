@@ -100,3 +100,21 @@ Erreurs rencontrées et décisions :
 - Une seconde génération dans la même session renomme les objets (`.001`) : tout est indexé par le nom réel de l’objet.
 
 Résultat mesuré sur la pièce analytique 640 × 480 (`photo_fixtures.py`, mode local, Standard, 4 cœurs CPU) : 18,3/20 en environ 3 minutes, contre 18,0 pour la projection brute. La scène reste cohérente hors axe ; le flanc de l’objet, inventé par le remplissage local, reste la zone la plus faible. Aucune photo réelle n’a encore été évaluée, et le chemin API n’est validé qu’avec un serveur simulé.
+
+### Première photo réelle et passe d'amélioration — 29 octobre 2026
+
+Photo fournie par l'utilisateur : intérieur de voiture-restaurant (laiton, banquettes cuir, table, plafonniers lotus, passe-plat, fenêtre du fond surexposée). La photo n'est pas versionnée. Profondeur MoGe-2 ViT-B sur CPU : 79° de champ estimé, caméra à 1,50 m du sol.
+
+Premier passage : 16,3/20, à égalité avec la projection brute, et une scène peu crédible hors axe. Les reliefs épaissis tenaient lieu de meubles, les bords étaient en escalier, le passe-plat était pris pour une fenêtre et les murs à baguettes laiton classés « brique » ou « bois ».
+
+Corrections :
+
+- **Silhouettes** : analyse à 384 px en Standard (512 en Final). Le contour des reliefs est relâché le long de lui-même avant de repousser le dos selon les rayons. Le RANSAC note ses hypothèses sur un sous-échantillon.
+- **Meubles** : chaque objet est décomposé en faces planes horizontales et verticales. Les pièces coplanaires séparées dans l'image restent distinctes. Les rectangles mal remplis (moins de 60 %, forme en L) sont refusés. Une assise dont la face avant descend au sol devient un bloc ; un plateau mince reçoit un pied fait des points situés dessous ; un dossier remplit l'écart jusqu'au mur s'il est inférieur à 60 cm. Seul le non-plan (plateaux, tasses, lampes) garde un relief. Les boîtes qui se touchent forment un module.
+- **Niches** : une ouverture dont le contenu est à moins de 80 cm derrière le mur devient une niche fermée par un fond, sans vitrage.
+- **Sol et plafond** : ils couvrent toute l'emprise des murs, même quand le sol est peu visible.
+- **Matériaux** : les statistiques sont mesurées sur la région de la photo, pas sur l'atlas (les îlots UV y créaient de faux motifs répétés). Deux familles par surface quand deux groupes de couleurs sont nets : un masque fait varier rugosité, métal, spéculaire et vernis sur le même albédo (laiton d'architecture). Carrelage et brique exigent une répétition dans deux directions. La rugosité tirée des reflets est bornée autour du préréglage.
+- **Sources visibles** : là où la photo est presque saturée (fenêtre, lampes, panneaux rétroéclairés), la radiance observée devient une émission et l'albédo est assombri. C'est une source physique, pas une beauty projetée.
+- **Look** : la courbe de tons assombrissait les pixels au-delà de 1 (valeurs écrêtées d'un seul côté du rapport), ce qui rendait la fenêtre grise. Corrigé. Glow et vignettage sont choisis parmi des candidats d'après la note /20, chacun avec son propre étalonnage.
+
+Résultat sur la même photo : 16,7/20 (16,3 avant, 16,4 pour la projection brute), avec ΔE moyen 4,9 au lieu de 5,6 et une lumière à 98 %. Hors axe, la table et les banquettes sont de vrais volumes et la fenêtre émet. Restent faibles : les surfaces vues en rasance depuis la photo (dessus de table vu de côté), étirées ou remplies localement, et une partie des familles de matière (« bois » sur des panneaux beiges). Une génération d'image (mode API) pour les vues manquantes est la prochaine étape logique.

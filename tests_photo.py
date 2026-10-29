@@ -76,6 +76,12 @@ class GeometryTests(unittest.TestCase):
         for m in self.r['modules']:
             if m['kind']!='backdrop': self.assertTrue(closed(m['faces']),m['name'])
 
+    def test_box_is_fitted_furniture_not_relief(self):
+        box=max((m for m in self.r['modules'] if m['kind']=='object'),key=lambda m:len(m['faces']))
+        self.assertEqual(box.get('shape'),'furniture')
+        lo,hi=box['vertices'].min(0),box['vertices'].max(0)
+        np.testing.assert_allclose(lo[[0,2]],(.1,0),atol=.06); np.testing.assert_allclose(hi[[0,2]],(.9,.8),atol=.06)
+
     def test_slab_hole_and_prior_depth(self):
         v,f=G.slab((0,0,0),(1,0,0),(0,0,1),(0,-1,0),(0,0,4,3),.2,[(1,1,2,2)])
         self.assertTrue(closed(f))
@@ -154,6 +160,18 @@ class LookTests(unittest.TestCase):
         st=L.texture_stats(lin,lab==0,.01)
         self.assertEqual(L.classify(st,'floor'),'wood'); self.assertEqual(L.classify(st,'object','brushed steel'),'metal')
         self.assertIn(L.recipe(st,'wood')['type'],('wood',))
+
+
+    def test_brass_trims_split_from_plaster_and_highlights_stay_white(self):
+        rng=np.random.default_rng(0); wall=np.ones((128,128,3),np.float32)*U.srgb_to_linear(np.array((.82,.76,.66)))
+        wall*=1+.03*rng.standard_normal((128,128,1)).astype(np.float32)
+        wall[:,20:23]=U.srgb_to_linear(np.array((.78,.6,.25))); wall[:,90:93]=wall[:,20:23]
+        sp=L.split_materials(wall,np.ones((128,128),bool))
+        self.assertIsNotNone(sp); self.assertEqual(L.classify(sp['main'],'wall'),'plaster'); self.assertEqual(L.classify_trim(sp['trim'],sp['main'],'wall'),'metal')
+        self.assertIsNone(L.split_materials(np.full((64,64,3),.4,np.float32)+.01*rng.standard_normal((64,64,3)).astype(np.float32),np.ones((64,64),bool)))
+        hot=np.full((8,8,3),2.,np.float32)
+        tone=dict(matrix=np.eye(3).tolist(),offset=[0,0,0],tone=[[0,.5,1],[0,.45,.98]],curves=None)
+        self.assertGreater(L.apply_look(hot,None,dict(grade=tone)).min(),.95)
 
 
 class ScoreTests(unittest.TestCase):

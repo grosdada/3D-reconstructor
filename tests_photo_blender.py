@@ -88,7 +88,7 @@ class PhotoLocalTests(unittest.TestCase):
         for o in textured:
             mat=o.active_material; nt=mat.node_tree
             bs=next(n for n in nt.nodes if n.type=='BSDF_PRINCIPLED')
-            self.assertFalse(bs.inputs['Emission Strength'].default_value>0)
+            if not mat.get('pa_photo_emitter'): self.assertFalse(bs.inputs['Emission Strength'].default_value>0)
             self.assertFalse(any(n.type=='EMISSION' for n in nt.nodes))
             atlas=nt.nodes['PA Atlas'].image; self.assertTrue(atlas.packed_file); images.add(atlas.name)
             self.assertIn('Atlas',[u.name for u in o.data.uv_layers])
